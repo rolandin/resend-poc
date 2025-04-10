@@ -123,6 +123,7 @@ export function EmailHistory() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'delivered':
+      case 'sent':
         return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case 'failed':
         return <XCircle className="h-4 w-4 text-red-500" />;
@@ -134,11 +135,22 @@ export function EmailHistory() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered':
+      case 'sent':
         return 'bg-green-100 text-green-800';
       case 'failed':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    try {
+      return format(new Date(dateString), 'MMM d, HH:mm:ss');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
     }
   };
 
@@ -187,9 +199,7 @@ export function EmailHistory() {
                       </div>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {email.delivered_at
-                        ? format(new Date(email.delivered_at), 'MMM d, HH:mm')
-                        : '-'}
+                      {formatDate(email.delivered_at)}
                     </TableCell>
                   </TableRow>
                 ))}

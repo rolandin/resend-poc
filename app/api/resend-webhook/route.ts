@@ -90,6 +90,7 @@ export async function POST(req: Request) {
       switch (type) {
         case 'email.sent':
           newStatus = 'sent';
+          updateData.delivered_at = created_at;
           break;
         case 'email.delivered':
           newStatus = 'delivered';

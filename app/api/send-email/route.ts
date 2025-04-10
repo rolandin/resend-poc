@@ -98,7 +98,8 @@ export async function POST(request: Request) {
       .from('emails_metadata_resend')
       .update({ 
         status: 'sent',
-        message_id: sendResult.id // Resend returns the message_id in the id field
+        message_id: sendResult.id, // Resend returns the message_id in the id field
+        delivered_at: new Date().toISOString()
       })
       .eq('id', emailInsert.id);
 
