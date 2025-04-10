@@ -155,8 +155,8 @@ export function EmailHistory() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card className="h-[600px] overflow-auto">
+    <div className="space-y-6">
+      <Card className="max-h-[400px] overflow-auto">
         <CardHeader className="space-y-1 sticky top-0 bg-white z-10 border-b">
           <CardTitle className="flex items-center gap-2 text-xl">
             <Mail className="h-5 w-5" />
@@ -216,7 +216,7 @@ export function EmailHistory() {
         </CardContent>
       </Card>
 
-      <Card className="h-[600px] overflow-auto">
+      <Card className="max-h-[400px] overflow-auto">
         <CardHeader className="space-y-1 sticky top-0 bg-white z-10 border-b">
           <CardTitle className="flex items-center gap-2 text-xl">
             <Mail className="h-5 w-5" />
