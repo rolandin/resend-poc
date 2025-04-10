@@ -43,6 +43,21 @@ interface EmailEvent {
   event_timestamp: string;
   recipient: string;
   message_id: string;
+  event_payload: {
+    to: string[];
+    from: string;
+    tags: {
+      category: string;
+      email_id: string;
+    };
+    headers: {
+      name: string;
+      value: string;
+    }[];
+    subject: string;
+    email_id: string;
+    created_at: string;
+  };
 }
 
 export function EmailHistory() {
@@ -245,14 +260,14 @@ export function EmailHistory() {
                         {event.event_type}
                       </Badge>
                     </TableCell>
-                    <TableCell className="max-w-[150px] truncate" title={event.recipient}>
-                      {event.recipient}
+                    <TableCell className="max-w-[150px] truncate" title={event.event_payload?.to?.[0]}>
+                      {event.event_payload?.to?.[0] || '-'}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(event.event_timestamp), 'MMM d, HH:mm')}
+                      {format(new Date(event.event_timestamp), 'MMM d, HH:mm:ss')}
                     </TableCell>
-                    <TableCell className="font-mono text-xs max-w-[150px] truncate" title={event.message_id}>
-                      {event.message_id}
+                    <TableCell className="font-mono text-xs max-w-[150px] truncate" title={event.event_payload?.email_id}>
+                      {event.event_payload?.email_id || '-'}
                     </TableCell>
                   </TableRow>
                 ))}
