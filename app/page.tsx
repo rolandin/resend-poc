@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { EmailHistory } from '@/components/EmailHistory';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -57,66 +58,72 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-8">
-        <div className="flex items-center justify-center mb-8">
-          <Mail className="h-12 w-12 text-blue-500" />
-          <h1 className="ml-3 text-2xl font-bold text-gray-900">Email Sender</h1>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12">
+      <div className="w-1/2 mx-auto px-4">
+        <div className="space-y-8">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden p-8">
+            <div className="flex items-center justify-center mb-8">
+              <Mail className="h-12 w-12 text-blue-500" />
+              <h1 className="ml-3 text-2xl font-bold text-gray-900">Email Sender</h1>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="to" className="block text-sm font-medium text-gray-700">
+                  To Email
+                </label>
+                <Input
+                  id="to"
+                  type="email"
+                  value={formData.to}
+                  onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                  placeholder="recipient@example.com"
+                  required
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-gray-700">
+                  Subject
+                </label>
+                <Input
+                  id="subject"
+                  type="text"
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  placeholder="Email subject"
+                  required
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="html" className="block text-sm font-medium text-gray-700">
+                  HTML Content
+                </label>
+                <Textarea
+                  id="html"
+                  value={formData.html}
+                  onChange={(e) => setFormData({ ...formData, html: e.target.value })}
+                  placeholder="<strong>Hello world!</strong>"
+                  required
+                  className="mt-1 h-32"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? 'Sending...' : 'Send Email'}
+              </Button>
+            </form>
+          </div>
+
+          <EmailHistory />
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="to" className="block text-sm font-medium text-gray-700">
-              To Email
-            </label>
-            <Input
-              id="to"
-              type="email"
-              value={formData.to}
-              onChange={(e) => setFormData({ ...formData, to: e.target.value })}
-              placeholder="recipient@example.com"
-              required
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="subject" className="block text-sm font-medium text-gray-700">
-              Subject
-            </label>
-            <Input
-              id="subject"
-              type="text"
-              value={formData.subject}
-              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-              placeholder="Email subject"
-              required
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="html" className="block text-sm font-medium text-gray-700">
-              HTML Content
-            </label>
-            <Textarea
-              id="html"
-              value={formData.html}
-              onChange={(e) => setFormData({ ...formData, html: e.target.value })}
-              placeholder="<strong>Hello world!</strong>"
-              required
-              className="mt-1 h-32"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
-            {loading ? 'Sending...' : 'Send Email'}
-          </Button>
-        </form>
       </div>
     </div>
   );

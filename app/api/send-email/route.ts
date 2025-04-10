@@ -6,6 +6,9 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
+const SENDER_EMAIL = 'Roland Niubo <roland@pototico.com>';
+const REPLY_TO = 'support@pototico.com';
+
 export async function POST(request: Request) {
   try {
     const { to, subject, html } = await request.json();
@@ -45,17 +48,40 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'noreply@pototico.com',
+        from: SENDER_EMAIL,
+        reply_to: REPLY_TO,
         to,
         subject,
         html,
+        tags: [
+          {
+            name: 'category',
+            value: 'test-email'
+          }
+        ]
       }),
     });
 
     const sendResult = await resendResponse.json();
 
     if (!resendResponse.ok) {
+      // Update status to failed if the send failed
+      await supabase
+        .from('emails_metadata_resend')
+        .update({ status: 'failed' })
+        .eq('id', emailInsert.id);
+
       throw new Error(sendResult.message || 'Failed to send email');
+    }
+
+    // Update status to sent if successful
+    const { error: updateError } = await supabase
+      .from('emails_metadata_resend')
+      .update({ status: 'sent' })
+      .eq('id', emailInsert.id);
+
+    if (updateError) {
+      console.error('Failed to update email status:', updateError);
     }
 
     return NextResponse.json({

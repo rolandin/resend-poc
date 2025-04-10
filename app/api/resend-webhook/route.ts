@@ -12,6 +12,8 @@ export async function POST(req: Request) {
 
     const { type, created_at, data } = event;
 
+    console.log('Received webhook event:', { type, data });
+
     // Try to match the event to an existing email log (based on recipient)
     const { data: emailRecord } = await supabase
       .from('emails_metadata_resend')
@@ -41,18 +43,46 @@ export async function POST(req: Request) {
       );
     }
 
-    // If this is a delivery event, update the email record
-    if (type === 'email.delivered' && emailRecord?.id) {
-      const { error: updateError } = await supabase
-        .from('emails_metadata_resend')
-        .update({ 
-          delivered_at: created_at,
-          status: 'delivered'
-        })
-        .eq('id', emailRecord.id);
+    // Update email status based on event type
+    if (emailRecord?.id) {
+      let newStatus;
+      switch (type) {
+        case 'email.sent':
+          newStatus = 'sent';
+          break;
+        case 'email.delivered':
+          newStatus = 'delivered';
+          break;
+        case 'email.delivery_delayed':
+          newStatus = 'delayed';
+          break;
+        case 'email.complained':
+        case 'email.bounced':
+          newStatus = 'failed';
+          break;
+        default:
+          // Don't update status for other events
+          newStatus = null;
+      }
 
-      if (updateError) {
-        console.error('Error updating email status:', updateError);
+      if (newStatus) {
+        const updateData: any = {
+          status: newStatus,
+        };
+
+        // Add delivered_at timestamp for delivery events
+        if (type === 'email.delivered') {
+          updateData.delivered_at = created_at;
+        }
+
+        const { error: updateError } = await supabase
+          .from('emails_metadata_resend')
+          .update(updateData)
+          .eq('id', emailRecord.id);
+
+        if (updateError) {
+          console.error('Error updating email status:', updateError);
+        }
       }
     }
 
