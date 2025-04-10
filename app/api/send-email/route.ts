@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
-import { EmailTemplate } from '@/components/email-template';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -36,16 +32,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // Step 2: Send email using Resend with React template
-    const { data: sendResult, error: sendError } = await resend.emails.send({
-      from: 'noreply@pototico.com',
-      to,
-      subject,
-      react: EmailTemplate({ to, subject, html }),
+    // Step 2: Send email using Resend REST API
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'noreply@pototico.com',
+        to,
+        subject,
+        html,
+      }),
     });
 
-    if (sendError) {
-      throw new Error(sendError.message);
+    const sendResult = await resendResponse.json();
+
+    if (!resendResponse.ok) {
+      throw new Error(sendResult.message || 'Failed to send email');
     }
 
     return NextResponse.json({
