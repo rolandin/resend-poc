@@ -20,7 +20,12 @@ export async function POST(request: Request) {
     // Step 1: Save email metadata to Supabase
     const { data: emailInsert, error: emailError } = await supabase
       .from('emails_metadata_resend')
-      .insert({ to_email: to, subject })
+      .insert({ 
+        to_email: to, 
+        subject,
+        sent_at: new Date().toISOString(),
+        status: 'pending'
+      })
       .select()
       .single();
 
