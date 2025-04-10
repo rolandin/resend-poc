@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+import { EmailTemplate } from '@/components/email-template';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -35,13 +36,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Step 2: Send email using Resend
-    const sendResult = await resend.emails.send({
+    // Step 2: Send email using Resend with React template
+    const { data: sendResult, error: sendError } = await resend.emails.send({
       from: 'noreply@pototico.com',
       to,
       subject,
-      html,
+      react: EmailTemplate({ to, subject, html }),
     });
+
+    if (sendError) {
+      throw new Error(sendError.message);
+    }
 
     return NextResponse.json({
       message: 'Email sent successfully',
@@ -51,7 +56,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Error sending email:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
