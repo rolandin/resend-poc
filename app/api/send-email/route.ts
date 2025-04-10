@@ -74,10 +74,13 @@ export async function POST(request: Request) {
       throw new Error(sendResult.message || 'Failed to send email');
     }
 
-    // Update status to sent if successful
+    // Update status to sent and store message_id if successful
     const { error: updateError } = await supabase
       .from('emails_metadata_resend')
-      .update({ status: 'sent' })
+      .update({ 
+        status: 'sent',
+        message_id: sendResult.id // Resend returns the message_id in the id field
+      })
       .eq('id', emailInsert.id);
 
     if (updateError) {

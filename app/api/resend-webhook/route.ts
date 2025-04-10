@@ -14,20 +14,37 @@ export async function POST(req: Request) {
 
     console.log('Received webhook event:', { type, data });
 
-    // Try to match the event to an existing email log (based on recipient)
+    // Try to match the event to an existing email log using message_id and recipient
     const { data: emailRecord } = await supabase
       .from('emails_metadata_resend')
       .select('*')
+      .eq('message_id', data?.message_id)
       .eq('to_email', data?.recipient)
-      .order('sent_at', { ascending: false })
-      .limit(1)
       .single();
+
+    // If we can't find by message_id, try to find by recipient as fallback
+    if (!emailRecord) {
+      console.log('Could not find email by message_id, trying recipient only');
+      const { data: fallbackRecord } = await supabase
+        .from('emails_metadata_resend')
+        .select('*')
+        .eq('to_email', data?.recipient)
+        .order('sent_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fallbackRecord) {
+        console.log('Found email by recipient fallback');
+      }
+    }
+
+    const matchedEmail = emailRecord;
 
     // Store the event in the database
     const { error: insertError } = await supabase
       .from('emails_events_resend')
       .insert({
-        email_id: emailRecord?.id || null,
+        email_id: matchedEmail?.id || null,
         event_type: type,
         event_timestamp: created_at || new Date().toISOString(),
         event_payload: data,
@@ -44,7 +61,7 @@ export async function POST(req: Request) {
     }
 
     // Update email status based on event type
-    if (emailRecord?.id) {
+    if (matchedEmail?.id) {
       let newStatus;
       switch (type) {
         case 'email.sent':
@@ -78,12 +95,16 @@ export async function POST(req: Request) {
         const { error: updateError } = await supabase
           .from('emails_metadata_resend')
           .update(updateData)
-          .eq('id', emailRecord.id);
+          .eq('id', matchedEmail.id);
 
         if (updateError) {
           console.error('Error updating email status:', updateError);
+        } else {
+          console.log(`Updated email ${matchedEmail.id} status to ${newStatus}`);
         }
       }
+    } else {
+      console.log('Could not find matching email record for event:', { type, data });
     }
 
     return NextResponse.json({ received: true });
