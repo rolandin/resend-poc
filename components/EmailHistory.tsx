@@ -155,9 +155,9 @@ export function EmailHistory() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="space-y-1">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card className="h-[600px] overflow-auto">
+        <CardHeader className="space-y-1 sticky top-0 bg-white z-10 border-b">
           <CardTitle className="flex items-center gap-2 text-xl">
             <Mail className="h-5 w-5" />
             Recent Emails
@@ -167,7 +167,7 @@ export function EmailHistory() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="rounded-md border">
+          <div className="rounded-md">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -216,8 +216,8 @@ export function EmailHistory() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="space-y-1">
+      <Card className="h-[600px] overflow-auto">
+        <CardHeader className="space-y-1 sticky top-0 bg-white z-10 border-b">
           <CardTitle className="flex items-center gap-2 text-xl">
             <Mail className="h-5 w-5" />
             Email Events
@@ -227,7 +227,7 @@ export function EmailHistory() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="rounded-md border">
+          <div className="rounded-md">
             <Table>
               <TableHeader>
                 <TableRow>
