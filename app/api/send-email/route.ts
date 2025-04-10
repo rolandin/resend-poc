@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { convert } from 'html-to-text';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -19,6 +20,15 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Convert HTML to text for better email deliverability
+    const text = convert(html, {
+      wordwrap: 130,
+      selectors: [
+        { selector: 'a', options: { hideLinkHrefIfSameAsText: true } },
+        { selector: 'img', format: 'skip' }
+      ]
+    });
 
     // Step 1: Save email metadata to Supabase
     const { data: emailInsert, error: emailError } = await supabase
@@ -53,10 +63,19 @@ export async function POST(request: Request) {
         to,
         subject,
         html,
+        text, // Add plain text version
+        headers: {
+          'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>`,
+          'X-Entity-Ref-ID': emailInsert.id,
+        },
         tags: [
           {
             name: 'category',
             value: 'test-email'
+          },
+          {
+            name: 'email_id',
+            value: emailInsert.id
           }
         ]
       }),

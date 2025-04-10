@@ -9,23 +9,36 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const event = await req.json();
-
     const { type, created_at, data } = event;
 
-    console.log('Received webhook event:', { type, data });
+    console.log('Received webhook event:', JSON.stringify({ type, data }, null, 2));
+
+    // Validate required fields
+    if (!type || !data) {
+      console.error('Missing required fields in webhook:', { type, data });
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
 
     // Try to match the event to an existing email log using message_id and recipient
-    const { data: emailRecord } = await supabase
+    const { data: emailRecord, error: selectError } = await supabase
       .from('emails_metadata_resend')
       .select('*')
       .eq('message_id', data?.message_id)
       .eq('to_email', data?.recipient)
       .single();
 
+    if (selectError) {
+      console.log('Error finding email by message_id:', selectError);
+    }
+
     // If we can't find by message_id, try to find by recipient as fallback
-    if (!emailRecord) {
+    let matchedEmail = emailRecord;
+    if (!matchedEmail) {
       console.log('Could not find email by message_id, trying recipient only');
-      const { data: fallbackRecord } = await supabase
+      const { data: fallbackRecord, error: fallbackError } = await supabase
         .from('emails_metadata_resend')
         .select('*')
         .eq('to_email', data?.recipient)
@@ -33,12 +46,15 @@ export async function POST(req: Request) {
         .limit(1)
         .single();
 
-      if (fallbackRecord) {
-        console.log('Found email by recipient fallback');
+      if (fallbackError) {
+        console.log('Error finding email by recipient:', fallbackError);
+      } else if (fallbackRecord) {
+        console.log('Found email by recipient fallback:', fallbackRecord.id);
+        matchedEmail = fallbackRecord;
       }
+    } else {
+      console.log('Found email by message_id:', matchedEmail.id);
     }
-
-    const matchedEmail = emailRecord;
 
     // Store the event in the database
     const { error: insertError } = await supabase
@@ -60,15 +76,24 @@ export async function POST(req: Request) {
       );
     }
 
+    console.log('Successfully stored event:', {
+      type,
+      email_id: matchedEmail?.id,
+      message_id: data?.message_id
+    });
+
     // Update email status based on event type
     if (matchedEmail?.id) {
       let newStatus;
+      let updateData: any = {};
+
       switch (type) {
         case 'email.sent':
           newStatus = 'sent';
           break;
         case 'email.delivered':
           newStatus = 'delivered';
+          updateData.delivered_at = created_at;
           break;
         case 'email.delivery_delayed':
           newStatus = 'delayed';
@@ -78,20 +103,12 @@ export async function POST(req: Request) {
           newStatus = 'failed';
           break;
         default:
-          // Don't update status for other events
+          console.log('No status update needed for event type:', type);
           newStatus = null;
       }
 
       if (newStatus) {
-        const updateData: any = {
-          status: newStatus,
-        };
-
-        // Add delivered_at timestamp for delivery events
-        if (type === 'email.delivered') {
-          updateData.delivered_at = created_at;
-        }
-
+        updateData.status = newStatus;
         const { error: updateError } = await supabase
           .from('emails_metadata_resend')
           .update(updateData)
@@ -100,11 +117,19 @@ export async function POST(req: Request) {
         if (updateError) {
           console.error('Error updating email status:', updateError);
         } else {
-          console.log(`Updated email ${matchedEmail.id} status to ${newStatus}`);
+          console.log('Updated email status:', {
+            id: matchedEmail.id,
+            status: newStatus,
+            delivered_at: updateData.delivered_at
+          });
         }
       }
     } else {
-      console.log('Could not find matching email record for event:', { type, data });
+      console.log('Could not find matching email record for event:', {
+        type,
+        message_id: data?.message_id,
+        recipient: data?.recipient
+      });
     }
 
     return NextResponse.json({ received: true });
